@@ -4,76 +4,147 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Mega
 {
     class Player : Sprite
     {
 
-        float _Gravity = 5f;
+        float _Gravity = 300f;
         float _Friction = 5f;
+        float _Speed = 300f;
+        float _JumpSpeed = 600f;
+        float _AirTime = 0f;
+        const float _MaxAirTime = .5f;
         Vector2 _Momentum = Vector2.Zero;
+        Vector2 curPos;
+        Texture2D rectTex;
+
+        public virtual Rectangle _TopRect
+        {
+            get
+            {
+                return new Rectangle((int)(this._BoundingBox.Left + 3), this._BoundingBox.Top, frameWidth - 6, 1);
+            }
+        }
+        public virtual Rectangle _LeftRect
+        {
+            get
+            {
+                return new Rectangle((int)(this._BoundingBox.Left), this._BoundingBox.Top, 3, frameHeight - 3 );
+            }
+        }
+
+        public virtual Rectangle _RightRect
+        {
+            get
+            {
+                return new Rectangle((int)(this._BoundingBox.Right-3), this._BoundingBox.Top, 3, frameHeight - 3);
+            }
+        }
+
 
         public virtual Rectangle _BottomRect
         {
             get
             {
-                return new Rectangle((int)this._Position.X, this._BoundingBox.Bottom, 1, 1);
+                return new Rectangle((int)(this._BoundingBox.Left), this._BoundingBox.Bottom, frameWidth, 1);
             }
         }
-        public void UpdateActive(GameTime gameTime, List<Block> bList)
+
+        public override void LoadContent(string path, ContentManager content)
+        {
+            base.LoadContent(path, content);
+            rectTex = content.Load<Texture2D>(@"Art/edgeTex");
+        }
+
+        public void UpdateActive(GameTime gameTime, List<Rectangle> bList)
         {
             base.UpdateActive(gameTime);
+            curPos = this._Position;
 
-
-            if(InputHelper.IsKeyPressed(Keys.Space))
+            if(InputHelper.IsKeyDown(Keys.Space) && _AirTime < _MaxAirTime)
             {
-                _Momentum.Y -= 4.0f;
+                this._Position.Y -= (int)(_JumpSpeed * gameTime.ElapsedGameTime.TotalSeconds);
+                _AirTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
             }
 
             if(InputHelper.IsKeyDown(Keys.D))
             {
-                _Momentum.X = 3f;
+                this._Position.X += (int)(_Speed * gameTime.ElapsedGameTime.TotalSeconds);
             }
             else if(InputHelper.IsKeyDown(Keys.A))
             {
-                _Momentum.X = -3f;
+                this._Position.X -= (int)(_Speed * gameTime.ElapsedGameTime.TotalSeconds);
             }
 
-            this._Position += _Momentum;
+            //this._Position += _Momentum;
 
 
 
-            _Momentum.Y += _Gravity * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            this._Position.Y += (_Gravity * (float)gameTime.ElapsedGameTime.TotalSeconds);
             
-            if(_Momentum.X > 0f)
-            {
-                _Momentum.X -= _Friction * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if (_Momentum.X < 0f)
-                {
-                    _Momentum.X = 0f;
-                }
-            }
-            else if(_Momentum.X < 0f)
-            {
-                _Momentum.X += _Friction * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if(_Momentum.X > 0f)
-                {
-                    _Momentum.X = 0f;
-                }
-            }
+            //if(_Momentum.X > 0f)
+            //{
+            //    _Momentum.X -= _Friction * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            //    if (_Momentum.X < 0f)
+            //    {
+            //        _Momentum.X = 0f;
+            //    }
+            //}
+            //else if(_Momentum.X < 0f)
+            //{
+            //    _Momentum.X += _Friction * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            //    if(_Momentum.X > 0f)
+            //    {
+            //        _Momentum.X = 0f;
+            //    }
+            //}
             
-            foreach(Block b in bList)
+            foreach(Rectangle b in bList)
             {
-                if(this._BottomRect.Intersects(b._BoundingBox))
+                if(this._RightRect.Intersects(b) || this._LeftRect.Intersects(b))
                 {
-                    Console.WriteLine(b.Name);
-                    this._Position.Y = b._BoundingBox.Top - this.frameHeight/2;
-                    _Momentum.Y = 0f;
+                    //_Momentum.X = 0f;
+                    this._Position.X = curPos.X;
                 }
+
+                if(this._BottomRect.Intersects(b))
+                {
+                    this._Position.Y = b.Top - this.frameHeight/2;
+                    this._Position.Y = curPos.Y;
+                    _AirTime = 0f;
+                    //_Momentum.Y = 0f;
+                }
+                else if(this._TopRect.Intersects(b))
+                {
+                    //_Momentum.Y = 0f;
+                    this._Position.Y = curPos.Y;
+
+                }
+            }
+
+            if(this._Position.Y > 500)
+            {
+                //_Momentum.Y = 0f;
+                this._Position.Y = 500;
+                this._Position.Y = curPos.Y;
             }
 
         }
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            base.Draw(spriteBatch);
+            spriteBatch.Draw(rectTex, _TopRect, Color.White);
+            spriteBatch.Draw(rectTex, _BottomRect, Color.White);
+            spriteBatch.Draw(rectTex, _RightRect, Color.White);
+            spriteBatch.Draw(rectTex, _LeftRect, Color.White);
+        }
     }
+
+    
 }

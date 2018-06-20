@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
+using TiledSharp;
 
 namespace Mega
 {
@@ -13,7 +14,9 @@ namespace Mega
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
         Player testGuy;
-        List<Block> blockList = new List<Block>();
+        List<Rectangle> rectList = new List<Rectangle>();
+
+        TilemapManager _MapManager;
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -47,15 +50,41 @@ namespace Mega
             testGuy.LoadContent(@"Art/Player", Content);
             testGuy._Position = new Vector2(200, 0);
 
-            for(int i = 0; i < 20; i++)
-            {
-                Block b = new Block();
-                b.LoadContent(@"Art/BLock", Content);
-                b._Position = new Vector2(i * 64, 500);
-                b.Name = i.ToString();
-                blockList.Add(b);
-            }
+            _MapManager = new TilemapManager();
+            _MapManager.LoadMap("ProtoLevel", Content);
+            LoadCollision(_MapManager.findMapByName("ProtoLevel"));
+
+            //for(int i = 0; i < 14; i++)
+            //{
+            //    Block b = new Block();
+            //    b.LoadContent(@"Art/BLock", Content);
+            //    b._Position = new Vector2(i * 64, 448);
+            //    b.Name = i.ToString();
+            //    blockList.Add(b);
+            //}
+
+            //for (int i = 0; i < 5; i++)
+            //{
+            //    Block b = new Block();
+            //    b.LoadContent(@"Art/BLock", Content);
+            //    b._Position = new Vector2((i * 64) + 384, 320);
+            //    b.Name = (i + 13).ToString();
+            //    blockList.Add(b);
+            //}
             // TODO: use this.Content to load your game content here
+        }
+
+        private void LoadCollision(TileMap theMap)
+        {
+            TmxList<TmxObject> ObjectList = theMap.FindFloors();
+            if (ObjectList != null)
+            {
+                foreach (TmxObject thing in ObjectList)
+                {
+                    Rectangle newR = new Rectangle((int)thing.X, (int)thing.Y, (int)thing.Width, (int)thing.Height);
+                    rectList.Add(newR);
+                }
+            }
         }
 
         /// <summary>
@@ -79,7 +108,7 @@ namespace Mega
 
             InputHelper.Update();
 
-            testGuy.UpdateActive(gameTime, blockList);
+            testGuy.UpdateActive(gameTime, rectList);
 
             // TODO: Add your update logic here
 
@@ -95,11 +124,8 @@ namespace Mega
             GraphicsDevice.Clear(Color.CornflowerBlue);
             spriteBatch.Begin();
             // TODO: Add your drawing code here
+            _MapManager.Draw(spriteBatch);
             testGuy.Draw(spriteBatch);
-            foreach(Block b in blockList)
-            {
-                b.Draw(spriteBatch);
-            }
             base.Draw(gameTime);
             spriteBatch.End();
         }
